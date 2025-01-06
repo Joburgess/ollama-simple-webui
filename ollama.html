@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ollama Chat</title>
+    <!-- CSS -->
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            flex-direction: column; 
+            height: 100vh;
+            align-items: center;
+        }
+        .chat-container {
+            flex: 1;
+            width: 95%;
+            height: 0;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            overflow-y: scroll;
+        }
+        .chat {
+            margin-bottom: 15px;
+        }
+        .chat.user {
+            text-align: right;
+            white-space: pre-line;
+        }
+        .chat.assistant {
+            text-align: left;
+            white-space: pre-line;
+        }
+        .chat .role {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .chat .message {
+            display: inline-block;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .chat.user .message {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+        .chat.assistant .message {
+            background-color: #cfe2ff;
+            color: #084298;
+        }
+        #messages {
+            flex: 2;
+            overflow-y: scroll;
+            padding: 1rem;
+            border-right: 1px solid #ccc;
+        }
+
+        #message-form {
+            padding: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- 消息区域 -->
+        <div class="chat-container" id="chat-container">
+            <!-- Chat history will be dynamically inserted here -->
+        </div>
+        <dev id="message-form">
+            <input type="text" id="message-input" placeholder="聊天内容...">
+            <button id="submit">发送</button>
+        </dev>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        const chatHistory = [];
+        let replyIng = false;//ai回复中
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatContainer = document.getElementById('chat-container');
+            const submitButton = document.getElementById('submit');
+            const messageInput = document.getElementById('message-input');
+
+            messageInput.addEventListener('keypress', event=>{
+                if(event.keyCode===13){
+                    sendMessage()
+                }
+            })
+
+            submitButton.addEventListener('click', (event) => {
+                sendMessage()
+            });
+
+            //发送消息
+            function sendMessage(){
+                if(replyIng){
+                    return;
+                }
+                replyIng = true;
+                event.preventDefault();
+                const input = document.getElementById('message-input');
+                renderChatHistory(true, {role: "user", content: input.value})
+                requestMessage();
+                input.value = '';
+            }
+
+            //请求数据
+            async function requestMessage() {
+                fetch('http://192.168.1.40:11434/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: "mistral",
+                        messages: chatHistory
+                    })
+                }).then(response=>{
+                    return response.body.getReader();
+                }).then(async reader=>{
+                    const decoder = new TextDecoder('utf-8');
+                    const replyStrArray = []
+                    chatHistory.push({role: "assistant", content: ""})
+
+                    while (true) {
+                        // 读取流中的数据块
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        const dataJson = JSON.parse(decoder.decode(value, { stream: true }))
+                        replyStrArray.push(dataJson.message.content)
+                        renderChatHistory(false, {role: "assistant", content: replyStrArray.join("")})
+                    }
+                    return replyStrArray.join("")
+                }).then(replyRes=>{
+                    // console.log(replyRes)
+                }).catch(e=>{
+                    console.error(e)
+                }).finally(()=>{
+                    replyIng = false
+                });
+                
+            }
+
+            //渲染聊天记录
+            function renderChatHistory(isNew, data) {
+                if(isNew){
+                    chatHistory.push(data)
+                }else{
+                    chatHistory.splice(chatHistory.length-1, 1, data)
+                }
+                chatContainer.innerHTML = ''; // Clear previous content
+
+                chatHistory.forEach(chat => {
+                    const chatDiv = document.createElement('div');
+                    chatDiv.className = `chat ${chat.role}`;
+
+                    const roleDiv = document.createElement('div');
+                    roleDiv.className = 'role';
+                    roleDiv.textContent = chat.role === 'user' ? 'Joburgess' : 'Assistant';
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message';
+                    messageDiv.textContent = chat.content;
+
+                    chatDiv.appendChild(roleDiv);
+                    chatDiv.appendChild(messageDiv);
+                    chatContainer.appendChild(chatDiv);
+                });
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+        });
+    </script>
+</body>
+
+</html>

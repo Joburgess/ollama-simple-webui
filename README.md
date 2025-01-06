@@ -3,6 +3,6 @@
 
 **使用前请先配置好ollama环境变量并重启ollama**:
 ```
-OLLAMA_HOST: :11434  
+OLLAMA_HOST: :11434
 OLLAMA_ORIGINS: *
 ```

@@ -6,70 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Ollama Chat</title>
     <!-- CSS -->
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            display: flex;
-            flex-direction: column; 
-            height: 100vh;
-            align-items: center;
-        }
-        .chat-container {
-            flex: 1;
-            width: 95%;
-            height: 0;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            overflow-y: scroll;
-        }
-        .chat {
-            margin-bottom: 15px;
-        }
-        .chat.user {
-            text-align: right;
-        }
-        .chat.assistant {
-            text-align: left;
-        }
-        .chat .role {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .chat .message {
-            display: inline-block;
-            padding: 0 10px;
-            border-radius: 5px;
-        }
-        .chat.user .message {
-            text-align: left;
-            background-color: #d1e7dd;
-            color: #0f5132;
-        }
-        .chat.assistant .message {
-            background-color: #cfe2ff;
-            color: #084298;
-        }
-        #messages {
-            flex: 2;
-            overflow-y: scroll;
-            padding: 1rem;
-            border-right: 1px solid #ccc;
-            max-width: 100%;
-            overflow-x: scroll;
-        }
-
-        #message-form {
-            padding: 1rem;
-        }
-    </style>
+    <link href="ollama.css" rel="stylesheet" type="text/css" />
 </head>
 
 <body>
@@ -78,25 +15,57 @@
         <div class="chat-container" id="chat-container">
             <!-- Chat history will be dynamically inserted here -->
         </div>
-        <dev id="message-form">
-            <input type="text" id="message-input" placeholder="聊天内容...">
-            <button id="submit">发送</button>
-        </dev>
+        <div id="message-form">
+            <textarea type="text" id="message-input" rows="3" placeholder="聊天内容..."></textarea>
+            <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+                <button id="submit">发送</button>
+                <select id="models"></select>
+            </div>
+        </div>
     </div>
 
     <!-- JavaScript -->
     <script src="./utils/marked.min.js"></script>
     <script>
+        const basePoint = "http://127.0.0.1:11434"
+        let chatModel = "";//模型名称
         document.addEventListener('DOMContentLoaded', () => {
             const chatContainer = document.getElementById('chat-container');
             const submitButton = document.getElementById('submit');
             const messageInput = document.getElementById('message-input');
+            const modelSelect = document.getElementById("models")
 
             const chatHistory = [];//聊天历史
             let replyIng = false;//ai回复中
-            let chatModel = "qwen2.5-coder:3b";//模型名称
 
             let controller = null;
+
+            loadModelTags();
+
+            //获取本地模型
+            function loadModelTags(){
+                fetch(`${basePoint}/api/tags`).then(res=>{
+                    return res.json()
+                }).then(res=>{
+                    initModels(res.models)
+                }).catch(e=>{
+                    console.error(e)
+                })
+            }
+
+            function initModels(models){
+                if(models.length<=0){
+                    return
+                }
+                chatModel = models[0].model
+                for(let model of models){
+                    modelSelect.options.add(new Option(model.name, model.model))
+                }
+            }
+
+            modelSelect.addEventListener('change', event=>{
+                chatModel = event.target.value
+            })
 
             messageInput.addEventListener('keypress', event=>{
                 if(event.keyCode===13){
@@ -110,6 +79,9 @@
 
             //发送消息
             function sendMessage(){
+                if(messageInput.value.length<=0){
+                    return;
+                }
                 if(replyIng){
                     controller.abort();
                     return;
@@ -123,9 +95,9 @@
                 messageInput.value = '';
             }
 
-            //请求数据
+            //请求对话数据
             async function requestMessage() {
-                fetch('http://127.0.0.1:11434/api/chat', {
+                fetch(`${basePoint}/api/chat`, {
                     signal: controller.signal,
                     method: 'POST',
                     headers: {

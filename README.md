@@ -1,5 +1,5 @@
 # ollama-simple-webui
-**一个简单的与ollama交互的网页应用**  
+**一个简单的与ollama交互的网页应用(ollama.html)**  
 
 **1、先配置好ollama环境变量**:
 ```

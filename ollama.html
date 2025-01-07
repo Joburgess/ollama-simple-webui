@@ -35,11 +35,9 @@
         }
         .chat.user {
             text-align: right;
-            white-space: pre-line;
         }
         .chat.assistant {
             text-align: left;
-            white-space: pre-line;
         }
         .chat .role {
             font-weight: bold;
@@ -47,10 +45,11 @@
         }
         .chat .message {
             display: inline-block;
-            padding: 10px;
+            padding: 0 10px;
             border-radius: 5px;
         }
         .chat.user .message {
+            text-align: left;
             background-color: #d1e7dd;
             color: #0f5132;
         }
@@ -63,6 +62,8 @@
             overflow-y: scroll;
             padding: 1rem;
             border-right: 1px solid #ccc;
+            max-width: 100%;
+            overflow-x: scroll;
         }
 
         #message-form {
@@ -84,13 +85,18 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="./utils/marked.min.js"></script>
     <script>
-        const chatHistory = [];
-        let replyIng = false;//ai回复中
         document.addEventListener('DOMContentLoaded', () => {
             const chatContainer = document.getElementById('chat-container');
             const submitButton = document.getElementById('submit');
             const messageInput = document.getElementById('message-input');
+
+            const chatHistory = [];//聊天历史
+            let replyIng = false;//ai回复中
+            let chatModel = "qwen2.5-coder:3b";//模型名称
+
+            let controller = null;
 
             messageInput.addEventListener('keypress', event=>{
                 if(event.keyCode===13){
@@ -105,25 +111,28 @@
             //发送消息
             function sendMessage(){
                 if(replyIng){
+                    controller.abort();
                     return;
                 }
+                controller = new AbortController();
                 replyIng = true;
                 event.preventDefault();
-                const input = document.getElementById('message-input');
-                renderChatHistory(true, {role: "user", content: input.value})
+                submitButton.textContent="停止"
+                renderChatHistory(true, {role: "user", content: messageInput.value})
                 requestMessage();
-                input.value = '';
+                messageInput.value = '';
             }
 
             //请求数据
             async function requestMessage() {
-                fetch('http://192.168.1.40:11434/api/chat', {
+                fetch('http://127.0.0.1:11434/api/chat', {
+                    signal: controller.signal,
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: "mistral",
+                        model: chatModel,
                         messages: chatHistory
                     })
                 }).then(response=>{
@@ -139,7 +148,7 @@
                         if (done) break;
                         const dataJson = JSON.parse(decoder.decode(value, { stream: true }))
                         replyStrArray.push(dataJson.message.content)
-                        renderChatHistory(false, {role: "assistant", content: replyStrArray.join("")})
+                        renderChatHistory(false, {role: "assistant", model: dataJson.model, content: replyStrArray.join("")})
                     }
                     return replyStrArray.join("")
                 }).then(replyRes=>{
@@ -148,6 +157,8 @@
                     console.error(e)
                 }).finally(()=>{
                     replyIng = false
+                    controller = null
+                    submitButton.textContent="发送"
                 });
                 
             }
@@ -167,11 +178,11 @@
 
                     const roleDiv = document.createElement('div');
                     roleDiv.className = 'role';
-                    roleDiv.textContent = chat.role === 'user' ? 'Joburgess' : 'Assistant';
+                    roleDiv.textContent = chat.role === 'user' ? 'User' : chat.model;
 
                     const messageDiv = document.createElement('div');
                     messageDiv.className = 'message';
-                    messageDiv.textContent = chat.content;
+                    messageDiv.innerHTML = marked.parse(chat.content);
 
                     chatDiv.appendChild(roleDiv);
                     chatDiv.appendChild(messageDiv);

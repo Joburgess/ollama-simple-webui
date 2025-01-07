@@ -1,5 +1,5 @@
 # ollama-simple-webui
-**一个简单的与ollama交互的[网页应用](http://www.baidu.com )**  
+**一个简单的与ollama交互的网页应用[在线访问](https://joburgess.github.io/ollama-simple-webui/ollama.html)**  
 
 **1、先配置好ollama环境变量**:
 ```

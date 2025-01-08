@@ -68,7 +68,7 @@
             })
 
             messageInput.addEventListener('keypress', event=>{
-                if(event.keyCode===13){
+                if(event.keyCode===13&&messageInput.value.length>0){
                     sendMessage()
                 }
             })
@@ -79,11 +79,12 @@
 
             //发送消息
             function sendMessage(){
-                if(messageInput.value.length<=0){
-                    return;
-                }
                 if(replyIng){
                     controller.abort();
+                    submitButton.textContent="发送";
+                    return;
+                }
+                if(messageInput.value.length<=0){
                     return;
                 }
                 controller = new AbortController();
@@ -126,6 +127,7 @@
                 }).then(replyRes=>{
                     // console.log(replyRes)
                 }).catch(e=>{
+                    if(e.name=='AbortError') return;
                     console.error(e)
                 }).finally(()=>{
                     replyIng = false

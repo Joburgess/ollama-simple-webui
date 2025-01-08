@@ -15,10 +15,10 @@ body {
     flex: 1;
     height: 0;
     border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    /* box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); */
     padding: 20px;
     box-sizing: border-box;
-    background: linear-gradient(135deg,#141e30,#243b55);
+    /* background: linear-gradient(135deg,#141e3009,#243b5509); */
     overflow-y: scroll;
 }
 .chat-container::-webkit-scrollbar {
@@ -42,14 +42,16 @@ body {
     display: inline-block;
     padding: 0 10px;
     border-radius: 10px;
+    box-sizing: border-box;
+    max-width: 100%;
 }
 .chat.user .message {
     text-align: left;
     color: white;
-    background: #0097a7;
+    background: #ffffff12;
 }
 .chat.assistant .message {
-    background: #00818f;
+    background: #ffffff12;
     color: white;
 }
 #messages {

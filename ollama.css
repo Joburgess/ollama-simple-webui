@@ -79,10 +79,13 @@ textarea{
     outline: none;
     border-radius: .5em;
     padding: .5em;
+    background-color: #ffffff12;
+    color: white;
 }
 #submit{
     border: none;
-    background-color: white;
+    color: white;
+    background-color: #ffffff12;
     border-radius: .5em .5em 0 0;
     flex: 1;
 }
@@ -92,13 +95,32 @@ textarea{
 #submit:active{
     background-color: #757575;
 }
+#clean{
+    width: 5em;
+    height: 100%;
+    border: none;
+    background-color: #ffffff12;
+    color: white;
+    border-radius: .5em;
+    margin-left: 1em;
+}
+#clean:hover{
+    background-color: #e0e0e0;
+}
+#clean:active{
+    background-color: #757575;
+}
 #models{
     border: none;
     outline: none;
-    background-color: white;
+    background-color: #ffffff12;
+    color: white;
     border-radius: 0 0 .5em .5em;
     text-align: center;
     flex: 1;
+}
+option{
+    color: black;
 }
 /** 大屏 */
 @media (max-width: 993px) {

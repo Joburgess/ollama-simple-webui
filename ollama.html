@@ -19,8 +19,10 @@
             <textarea type="text" id="message-input" rows="3" placeholder="聊天内容..."></textarea>
             <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
                 <button id="submit">发送</button>
+                <div style="height: 1px;"></div>
                 <select id="models"></select>
             </div>
+            <button id="clean">清空</button>
         </div>
     </div>
 
@@ -33,7 +35,8 @@
             const chatContainer = document.getElementById('chat-container');
             const submitButton = document.getElementById('submit');
             const messageInput = document.getElementById('message-input');
-            const modelSelect = document.getElementById("models")
+            const modelSelect = document.getElementById("models");
+            const cleanButton = document.getElementById('clean');
 
             const chatHistory = [];//聊天历史
             let replyIng = false;//ai回复中
@@ -137,12 +140,18 @@
                 
             }
 
+            cleanButton.addEventListener('click', e=>renderChatHistory())
+
             //渲染聊天记录
             function renderChatHistory(isNew, data) {
-                if(isNew){
-                    chatHistory.push(data)
+                if(!data){
+                    chatHistory.splice(0)
                 }else{
-                    chatHistory.splice(chatHistory.length-1, 1, data)
+                    if(isNew){
+                        chatHistory.push(data)
+                    }else{
+                        chatHistory.splice(chatHistory.length-1, 1, data)
+                    }
                 }
                 chatContainer.innerHTML = ''; // Clear previous content
 

@@ -125,7 +125,6 @@
                         if (done) break;
                         try{
                             const dataJson = JSON.parse(decoder.decode(value, { stream: true }));
-                            console.log(dataJson)
                             replyStrArray.push(dataJson.message.content)
                             refreshLastMessage({role: "assistant", model: dataJson.model, content: replyStrArray.join("")})
                         }catch(e){

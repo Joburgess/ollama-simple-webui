@@ -32,6 +32,7 @@
     <script>
         const basePoint = "http://127.0.0.1:11434"
         let chatModel = "";//模型名称
+        const chatHistory = [];//聊天历史
         document.addEventListener('DOMContentLoaded', () => {
             const chatContainer = document.getElementById('chat-container');
             const submitButton = document.getElementById('submit');
@@ -39,7 +40,6 @@
             const modelSelect = document.getElementById("models");
             const cleanButton = document.getElementById('clean');
 
-            const chatHistory = [];//聊天历史
             let replyIng = false;//ai回复中
 
             let controller = null;
@@ -102,6 +102,7 @@
 
             //请求对话数据
             async function requestMessage() {
+                renderChatHistory(true, {role: "assistant", model: chatModel, content: "思考中..."});
                 fetch(`${basePoint}/api/chat`, {
                     signal: controller.signal,
                     method: 'POST',
@@ -110,22 +111,26 @@
                     },
                     body: JSON.stringify({
                         model: chatModel,
-                        messages: chatHistory
+                        messages: chatHistory.slice(0, chatHistory.length-1)
                     })
                 }).then(response=>{
                     return response.body.getReader();
                 }).then(async reader=>{
                     const decoder = new TextDecoder('utf-8');
                     const replyStrArray = []
-                    chatHistory.push({role: "assistant", content: ""})
 
                     while (true) {
                         // 读取流中的数据块
                         const { done, value } = await reader.read();
                         if (done) break;
-                        const dataJson = JSON.parse(decoder.decode(value, { stream: true }))
-                        replyStrArray.push(dataJson.message.content)
-                        renderChatHistory(false, {role: "assistant", model: dataJson.model, content: replyStrArray.join("")})
+                        try{
+                            const dataJson = JSON.parse(decoder.decode(value, { stream: true }));
+                            console.log(dataJson)
+                            replyStrArray.push(dataJson.message.content)
+                            refreshLastMessage({role: "assistant", model: dataJson.model, content: replyStrArray.join("")})
+                        }catch(e){
+                            console.error(e);
+                        }
                     }
                     return replyStrArray.join("")
                 }).then(replyRes=>{
@@ -154,25 +159,53 @@
                         chatHistory.splice(chatHistory.length-1, 1, data)
                     }
                 }
-                chatContainer.innerHTML = ''; // Clear previous content
 
-                chatHistory.forEach(chat => {
-                    const chatDiv = document.createElement('div');
-                    chatDiv.className = `chat ${chat.role}`;
+                const i = chatHistory.length - 1;
+                let chat = chatHistory[i];
+                const chatDiv = document.createElement('div');
+                chatDiv.className = `chat ${chat.role}`;
 
-                    const roleDiv = document.createElement('div');
-                    roleDiv.className = 'role';
-                    roleDiv.textContent = chat.role === 'user' ? 'User' : chat.model;
+                const roleDiv = document.createElement('div');
+                roleDiv.className = 'role';
+                roleDiv.textContent = chat.role === 'user' ? 'User' : chat.model;
 
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = 'message';
-                    messageDiv.innerHTML = marked.parse(chat.content);
+                const messageDiv = document.createElement('div');
+                messageDiv.id = `${i}`;
+                messageDiv.className = 'message';
+                messageDiv.innerHTML = marked.parse(chat.content);
 
-                    chatDiv.appendChild(roleDiv);
-                    chatDiv.appendChild(messageDiv);
-                    chatContainer.appendChild(chatDiv);
-                });
+                chatDiv.appendChild(roleDiv);
+                chatDiv.appendChild(messageDiv);
+                chatContainer.appendChild(chatDiv);
+
                 chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            function refreshLastMessage(chat){
+                chatHistory.splice(chatHistory.length-1, 1, chat)
+                const messageDiv = document.getElementById(chatHistory.length-1);
+                
+                const hasThink = chat.content.includes("<think>");
+
+                const replys = chat.content.replace("<think>", "").split("</think>");
+
+                if(!hasThink){
+                    replys.splice(0, 0, '');
+                }
+
+                const thinkDiv = document.createElement('div');
+                thinkDiv.className = 'think';
+                thinkDiv.innerHTML = marked.parse(replys[0]);
+
+                messageDiv.innerHTML = "";
+                messageDiv.appendChild(thinkDiv);
+
+                if(replys.length>1){
+                    const replyDiv = document.createElement('div');
+                    replyDiv.className = 'reply';
+                    replyDiv.innerHTML = marked.parse(replys[1]);
+                    messageDiv.appendChild(replyDiv);
+                }
             }
 
         });
